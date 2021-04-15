@@ -40,12 +40,14 @@ class Database:
         return False
 
     def run_initial_scripts(self):
+        print("Running initial scripts...")
         # Iterate over all files in initial_scripts
         for script_name in os.listdir(self.initial_scripts_directory):
             script_path = os.path.join(self.initial_scripts_directory, script_name)
             with open(script_path, "r") as script_file:
                 script = script_file.read()
                 self.engine.execute(script)
+        print("Success: database is ready to go.")
         return
 
     def insert_object_into_table(self, table, obj):
@@ -80,28 +82,38 @@ class Database:
         else:
             return False
 
-    def select(self, table, fields, filters):
-        # Connect to database
-        conn = self.start_connection()
-        # Create fields part of the query
-        fields_query = ', '.join(fields)
-        # Build query
-        query = "SELECT " + fields_query + " FROM " + table
-        # Add filters query
-        if filters:
-            filters_query = " WHERE "
-            values = []
-            for condition, value in filters.items():
-                filters_query += condition + "%s" + "AND "
-                values.append(value)
-            # Remove extra AND
-            filters_query = filters_query[:-4]
-            query += filters_query
-        # Get results
-        print(query)
-        cursor = conn
-        cursor.execute(query, tuple(values))
-        print(cursor.fetchall())
+    def get_columns(self, table):
+        db_table = self.get_sqlalchemy_table(table)
+        return db_table.__table__.columns
+
+    def select_table(self, table):
+        db_table = self.get_sqlalchemy_table(table)
+        stmt = db_table.select()
+        result = self.engine.execute(stmt).fetchall()
+        return result
+
+    # def select(self, table, fields, filters):
+    #     # Connect to database
+    #     conn = self.start_connection()
+    #     # Create fields part of the query
+    #     fields_query = ', '.join(fields)
+    #     # Build query
+    #     query = "SELECT " + fields_query + " FROM " + table
+    #     # Add filters query
+    #     if filters:
+    #         filters_query = " WHERE "
+    #         values = []
+    #         for condition, value in filters.items():
+    #             filters_query += condition + "%s" + "AND "
+    #             values.append(value)
+    #         # Remove extra AND
+    #         filters_query = filters_query[:-4]
+    #         query += filters_query
+    #     # Get results
+    #     print(query)
+    #     cursor = conn
+    #     cursor.execute(query, tuple(values))
+    #     print(cursor.fetchall())
 
         # Select and return as pandas
         return 1

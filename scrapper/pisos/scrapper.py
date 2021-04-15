@@ -1,6 +1,7 @@
 import datetime
 import random
 import time
+import sys
 
 import requests
 from bs4 import BeautifulSoup
@@ -8,12 +9,12 @@ from bs4 import BeautifulSoup
 from .pisos import Pisos
 
 MAIN_URL = "https://www.pisos.com"
-TABLE_NAME = "pisos"
+TABLE_NAME = "properties"
 
 
 # Print all attributes from a class
-def log_results(pisos):
-    attrs = vars(pisos)
+def log_results(obj):
+    attrs = vars(obj)
     print(', '.join("%s: %s" % item for item in attrs.items()))
     return
 
@@ -23,9 +24,9 @@ def get_sleep_time():
     fast_search_range = range(0, 9)
     current_hour = datetime.datetime.now().hour
     if current_hour in slow_search_range:
-        return random.randint(4, 8)
+        return random.randint(1, 5)
     elif current_hour in fast_search_range:
-        return random.randint(1, 4)
+        return random.randint(1, 3)
 
 
 # Get part of url according to buy or sell
@@ -85,18 +86,29 @@ def get_all_ads(url):
     return all_ads
 
 
+# Add url snippet that accounts for the most recent flats
+def get_recent_url():
+    url = "/fecharecientedesde-desc/"
+    return url
+
+
 # Scrap
 # Function to scrap Pisos.com
-def scrap(city, action, db):
+def scrap(city, action, pages, db):
     # Scrap webpage to get number of pages
-    start_url = MAIN_URL + "/en/" + get_action_url(action) + "/" + get_location_url(city)
-    n_pages = get_number_of_pages(start_url)
+    start_url = MAIN_URL + "/en/" + get_action_url(action) + "/" + get_location_url(city) + get_recent_url()
+    # Assign number of pages
+    start_page = pages[0]
+    last_page = pages[1]
+    n_pages = min(get_number_of_pages(start_url), last_page)
     # Start scrapping
-    for i in range(n_pages):
+    for page in range(start_page, n_pages+1):
+        print("Current page:", page)
         # Get ads from url + page
-        url = start_url + "/" + str(i)
+        url = start_url + "/" + str(page)
         all_ads = get_all_ads(url)
         for ad in all_ads:
+            print(ad)
             ad_url_snippet = ad['data-navigate-ref']
             ad_url = MAIN_URL + ad_url_snippet
             if not db.is_url_in_database(TABLE_NAME, ad_url):
@@ -107,9 +119,8 @@ def scrap(city, action, db):
                 # Add to database
                 db.insert_object_into_table(TABLE_NAME, pisos)
                 sleep_time = get_sleep_time()
-                print(f"Wait for {sleep_time} sec.")
                 time.sleep(sleep_time)
-        break
-
+            #else:
+             #   sys.exit("Success: Synchronized.")
 
 

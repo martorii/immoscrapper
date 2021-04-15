@@ -25,11 +25,11 @@ services:
       PMA_PASSWORD: ${db_password}
     ports:
       - "8080:80"
-  scrapper:
-    build:
-      context: scrapper
-      dockerfile: Dockerfile
-    container_name: scrapper
+#  scrapper:
+#    build:
+#      context: scrapper
+#      dockerfile: Dockerfile
+#    container_name: scrapper
 
 networks:
   default:

@@ -1,5 +1,4 @@
 import datetime
-
 from bs4 import BeautifulSoup
 import re
 
@@ -10,6 +9,7 @@ data_dict = {
             "Rooms": "n_rooms",
             "Bathrooms": "n_bathrooms",
             "Flooring": 'flooring',
+            "Floor area": "floor_area",
             "Floor": "floor",
             "Antiquity": "antiquity",
             "Condition": "condition",
@@ -43,6 +43,8 @@ def get_price(soup):
         price = soup.find("span", {"class": "h1 jsPrecioH1"}).text
         # Remove currency and .
         price = re.sub(r"[^0-9]", "", price)
+        if price == "":
+            price = -1
     except:
         # Log error
         log_attribute_not_found("price")
@@ -80,31 +82,41 @@ def get_energy_certificate(soup):
 
 def get_value_from_raw_text(key, text):
     value = None
-    try:
-        if key in ["Garage"]:
-            if ":" in text:
+    if not "Sin especificar" in text:
+        try:
+            if key == "Garage":
+                if ":" in text:
+                    value = re.sub(r"[^0-9]", "", text)
+                    if value == "":
+                        # Optional case
+                        value = 1
+                else:
+                    value = 1
+            if key == "Garden":
+                if ":" in text:
+                    value = text.split(":")[1].strip()
+                else:
+                    value = "private"
+            if key in ["Heating", "Air con"]:
+                if ":" in text:
+                    value = text.split(":")[1].strip()
+                else:
+                    value = "yes"
+            if key == "Floor":
+                if ("Basement" in text) or ("Ground floor" in text) or ("Main" in text):
+                    value = 0
+                elif "Mezzanine" in text:
+                    value = None
+                else:
+                    value = re.sub(r"[^0-9]", "", text.split(":")[1].strip())
+            if key in ["Built-up area", "Useable floor area", "Rooms", "Bathrooms", "Floor area"]:
                 value = re.sub(r"[^0-9]", "", text)
-            else:
-                value = 1
-        if key == "Garden":
-            if ":" in text:
+            elif key in ["Condition", "Antiquity",  "Facing", "Flooring", "Swimming pool"]:
                 value = text.split(":")[1].strip()
-            else:
-                value = "private"
-        if key in ["Heating", "Air con"]:
-            if ":" in text:
-                value = text.split(":")[1].strip()
-            else:
-                value = "yes"
-
-        if key in ["Built-up area", "Useable floor area", "Rooms", "Bathrooms", "Floor"]:
-            value = re.sub(r"[^0-9]", "", text)
-        elif key in ["Condition", "Antiquity",  "Facing", "Flooring", "Swimming pool"]:
-            value = text.split(":")[1].strip()
-        elif key in ["Own Balcony", "Terrace", "Security system", "Equipped kitchen", "Lift"]:
-            value = True
-    except:
-        print("This key could not be matched:", key)
+            elif key in ["Own Balcony", "Terrace", "Security system", "Equipped kitchen", "Lift"]:
+                value = True
+        except:
+            print("This key could not be matched:", key)
     return value
 
 
@@ -120,6 +132,7 @@ class Pisos:
         self.location = get_location(soup)
         self.title = get_title(soup)
         self.energy_certificate = get_energy_certificate(soup)
+        self.portal = "pisos"
         # Set all remaining attributes
         self.set_data(soup)
 
