@@ -15,7 +15,7 @@ if not db.test_connection():
 # Define what to search for
 city = "Barcelona"
 action = "buy"
-pages = [1, 1]
+pages = [1, 3000]
 
 # Scrap
 fotocasa_scrapper.scrap(city, action, pages, db)

@@ -84,7 +84,7 @@ class Database:
 
     def get_columns(self, table):
         db_table = self.get_sqlalchemy_table(table)
-        return db_table.__table__.columns
+        return db_table.columns
 
     def select_table(self, table):
         db_table = self.get_sqlalchemy_table(table)

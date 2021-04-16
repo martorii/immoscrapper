@@ -15,7 +15,7 @@ if not db.test_connection():
 # Define what to search for
 city = "Barcelona"
 action = "buy"
-pages = [45, 2000]
+pages = [1, 2000]
 
 # Scrap
 pisos_scrapper.scrap(city, action, pages, db)

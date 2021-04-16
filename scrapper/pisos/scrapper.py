@@ -108,7 +108,6 @@ def scrap(city, action, pages, db):
         url = start_url + "/" + str(page)
         all_ads = get_all_ads(url)
         for ad in all_ads:
-            print(ad)
             ad_url_snippet = ad['data-navigate-ref']
             ad_url = MAIN_URL + ad_url_snippet
             if not db.is_url_in_database(TABLE_NAME, ad_url):

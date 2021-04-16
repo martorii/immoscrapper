@@ -5,6 +5,10 @@ import webbrowser
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 import requests
 from bs4 import BeautifulSoup
@@ -27,9 +31,17 @@ def get_sleep_time():
     fast_search_range = range(0, 9)
     current_hour = datetime.datetime.now().hour
     if current_hour in slow_search_range:
-        return random.randint(4, 8)
+        return random.randint(1, 3)
     elif current_hour in fast_search_range:
-        return random.randint(1, 4)
+        return random.randint(1, 2)
+
+
+# CHeck if there were problems with the extraction
+def sanity_check_fotocasa(fotocasa):
+    if fotocasa.title is None:
+        return False
+    else:
+        return True
 
 
 # Get part of url according to buy or sell
@@ -67,9 +79,8 @@ def get_html_from_url(url):
 
 
 # Go to the bottom to load all rows
-def scroll_to_bottom(browser):
+def scroll_to_bottom(browser, page_downs):
     elem = browser.find_element_by_tag_name("body")
-    page_downs = 20
     while page_downs:
         elem.send_keys(Keys.PAGE_DOWN)
         time.sleep(0.2)
@@ -77,26 +88,56 @@ def scroll_to_bottom(browser):
     return
 
 
+# Add options to browser and start it
+def start_browser():
+    options = Options()
+    options.add_argument('--headless')
+    options.add_argument('--disable-gpu')
+    browser = webdriver.Chrome(executable_path="./drivers/chromedriver.exe", chrome_options=options)
+    return browser
+
+
 # Soup HTML and get a list with all ads
 def get_all_ads(url):
+    page_downs = 20
     # Start browser
-    browser = webdriver.Chrome(executable_path="./drivers/chromedriver.exe")
+    browser = start_browser()
     # Scroll down to get all ads
     browser.get(url)
-    # Wait for pop-up to appear
-    time.sleep(5)
-    # Accept terms
-    browser.find_element_by_xpath('//button[@data-testid="TcfAccept"]').click()
+    # Wait for pop-up to appear and accept terms
+    WebDriverWait(browser, 10).until(
+        EC.presence_of_element_located((By.XPATH, '//button[@data-testid="TcfAccept"]'))
+    ).click()
     # Wait until page loads
-    time.sleep(3)
+    time.sleep(1)
     # Go to the end of the page to load all rows
-    scroll_to_bottom(browser)
+    scroll_to_bottom(browser, page_downs)
     # Get ads from webpage
     html = browser.page_source
     soup = BeautifulSoup(html, 'html.parser')
-    ads = soup.find_all("article", {"div": "re-Card-primary"})
-    print(ads[0])
+    ads = soup.find_all("div", {"class": "re-Card-primary"})
+    # Close browser
+    browser.close()
     return ads
+
+
+def get_html_from_url_scrolling_to_bottom(url):
+    page_downs = 10
+    # Start browser
+    browser = start_browser()
+    # Scroll down to get all ads
+    browser.get(url)
+    # Wait for pop-up to appear and accept terms
+    WebDriverWait(browser, 10).until(
+        EC.presence_of_element_located((By.XPATH, '//button[@data-testid="TcfAccept"]'))
+    ).click()
+    # Wait until page loads
+    time.sleep(1)
+    # Go to the end of the page to load all rows
+    scroll_to_bottom(browser, page_downs)
+    # Get ads from webpage
+    html = browser.page_source
+    return html
 
 
 # Replace placeholder with page on the url
@@ -121,17 +162,14 @@ def scrap(city, action, pages, db):
         url = add_page_to_url(start_url, page)
         all_ads = get_all_ads(url)
         for ad in all_ads:
-            ad_url = ad.find('a')['href']
-            print(ad_url)
-            exit(8)
+            ad_url = MAIN_URL + ad.find('a')['href']
             if not db.is_url_in_database(TABLE_NAME, ad_url):
-                html = get_html_from_url(ad_url)
-                print(html)
+                html = get_html_from_url_scrolling_to_bottom(ad_url)
                 fotocasa = Fotocasa(html, ad_url)
-                # Print results
-                log_results(pisos)
-                # Add to database
-                db.insert_object_into_table(TABLE_NAME, pisos)
-                sleep_time = get_sleep_time()
-                print(f"Wait for {sleep_time} sec.")
-                time.sleep(sleep_time)
+                if sanity_check_fotocasa(fotocasa):
+                    # Print results
+                    log_results(fotocasa)
+                    # Add to database
+                    db.insert_object_into_table(TABLE_NAME, fotocasa)
+                    sleep_time = get_sleep_time()
+                    time.sleep(sleep_time)
