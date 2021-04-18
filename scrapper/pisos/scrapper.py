@@ -112,14 +112,12 @@ def scrap(city, action, pages, db):
             ad_url = MAIN_URL + ad_url_snippet
             if not db.is_url_in_database(TABLE_NAME, ad_url):
                 html = get_html_from_url(ad_url)
-                pisos = Pisos(html, ad_url)
+                pisos = Pisos(html, ad_url, action)
                 # Print results
                 log_results(pisos)
                 # Add to database
                 db.insert_object_into_table(TABLE_NAME, pisos)
                 sleep_time = get_sleep_time()
                 time.sleep(sleep_time)
-            #else:
-             #   sys.exit("Success: Synchronized.")
 
 

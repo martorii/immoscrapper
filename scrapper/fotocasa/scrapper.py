@@ -166,9 +166,9 @@ def scrap(city, action, pages, db):
             if not db.is_url_in_database(TABLE_NAME, ad_url):
                 html = get_html_from_url_scrolling_to_bottom(ad_url)
                 fotocasa = Fotocasa(html, ad_url)
+                # Print results
+                log_results(fotocasa)
                 if sanity_check_fotocasa(fotocasa):
-                    # Print results
-                    log_results(fotocasa)
                     # Add to database
                     db.insert_object_into_table(TABLE_NAME, fotocasa)
                     sleep_time = get_sleep_time()

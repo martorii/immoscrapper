@@ -103,10 +103,9 @@ def get_value_from_raw_text(key, text):
                 else:
                     value = "yes"
             if key == "Floor":
-                if ("Basement" in text) or ("Ground floor" in text) or ("Main" in text):
+                zero_floor_list = ['Ground floor', 'Main', 'Sub-basement', 'Basement', 'Subbasement', 'Mezzanine']
+                if any(zero_floor in text for zero_floor in zero_floor_list):
                     value = 0
-                elif "Mezzanine" in text:
-                    value = None
                 else:
                     value = re.sub(r"[^0-9]", "", text.split(":")[1].strip())
             if key in ["Built-up area", "Useable floor area", "Rooms", "Bathrooms", "Floor area"]:
@@ -122,7 +121,7 @@ def get_value_from_raw_text(key, text):
 
 class Pisos:
 
-    def __init__(self, html, url):
+    def __init__(self, html, url, action):
         self.url = url
         # Convert html to soup
         soup = BeautifulSoup(html, 'html.parser')
@@ -133,6 +132,7 @@ class Pisos:
         self.title = get_title(soup)
         self.energy_certificate = get_energy_certificate(soup)
         self.portal = "pisos"
+        self.sale_or_rent = action
         # Set all remaining attributes
         self.set_data(soup)
 
