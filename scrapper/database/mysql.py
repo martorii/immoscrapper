@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, insert, Table, MetaData, func, inspect, text
 from sqlalchemy.orm import Session
+import datetime
 import time
 import os
 
@@ -9,7 +10,7 @@ class Database:
         self.user = user
         self.password = password
         self.host = host
-        self.host = "localhost"
+        # self.host = "localhost"
         self.database = database
         self.port = port
         self.engine_url = "mysql+pymysql://" + str(self.user) + ":" + str(self.password) + "@" + self.host + ":" + \
@@ -61,7 +62,6 @@ class Database:
         values_dict = dict(zip(placeholders, non_empty_values))
         session = Session(self.engine, future=True)
         db_table = self.get_sqlalchemy_table(table)
-        stmt = (db_table.insert().values(values_dict))
         session.execute(db_table.insert().values(values_dict))
         session.commit()
         return
@@ -82,6 +82,15 @@ class Database:
         else:
             return False
 
+    def update_last_seen(self, table, url):
+        db_table = self.get_sqlalchemy_table(table)
+        last_seen = datetime.date.today().strftime("%Y-%m-%d")
+        stmt = db_table.update().where(db_table.c.url == url).values(last_seen=last_seen)
+        session = Session(self.engine, future=True)
+        session.execute(stmt)
+        session.commit()
+        return
+
     def get_columns(self, table):
         db_table = self.get_sqlalchemy_table(table)
         return db_table.columns
@@ -92,29 +101,9 @@ class Database:
         result = self.engine.execute(stmt).fetchall()
         return result
 
-    # def select(self, table, fields, filters):
-    #     # Connect to database
-    #     conn = self.start_connection()
-    #     # Create fields part of the query
-    #     fields_query = ', '.join(fields)
-    #     # Build query
-    #     query = "SELECT " + fields_query + " FROM " + table
-    #     # Add filters query
-    #     if filters:
-    #         filters_query = " WHERE "
-    #         values = []
-    #         for condition, value in filters.items():
-    #             filters_query += condition + "%s" + "AND "
-    #             values.append(value)
-    #         # Remove extra AND
-    #         filters_query = filters_query[:-4]
-    #         query += filters_query
-    #     # Get results
-    #     print(query)
-    #     cursor = conn
-    #     cursor.execute(query, tuple(values))
-    #     print(cursor.fetchall())
-
-        # Select and return as pandas
-        return 1
-        # return df
+    def select_unique_query(self, query):
+        session = Session(self.engine, future=True)
+        query_result = session.execute(query).fetchall()
+        session.commit()
+        result = [r[0] for r in query_result]
+        return result

@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS properties (
     url VARCHAR(255) NOT NULL,
     portal VARCHAR(30) NOT NULL,
     sale_or_rent VARCHAR(10) NOT NULL,
+    last_seen DATE NOT NULL,
     price INT,
     location VARCHAR(150),
     energy_certificate VARCHAR(1),

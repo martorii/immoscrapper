@@ -1,7 +1,6 @@
 import datetime
 import random
 import time
-import sys
 
 import requests
 from bs4 import BeautifulSoup
@@ -119,5 +118,10 @@ def scrap(city, action, pages, db):
                 db.insert_object_into_table(TABLE_NAME, pisos)
                 sleep_time = get_sleep_time()
                 time.sleep(sleep_time)
+            else:
+                # Update last_seen field
+                db.update_last_seen(TABLE_NAME, ad_url)
+                print("Already in database.")
+
 
 

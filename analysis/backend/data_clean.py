@@ -3,7 +3,7 @@ import numpy as np
 import Levenshtein as lev
 
 def drop_unnecessary_columns(df):
-    unnecessary_columns = ['property_id', 'title', 'url', 'extraction_date', 'lift', 'security_system']
+    unnecessary_columns = ['property_id', 'title', 'extraction_date', 'lift', 'security_system', 'last_seen']
     df.drop(columns=unnecessary_columns, inplace=True)
     return df
 
@@ -53,13 +53,16 @@ def preprocess_pisos(df, sale_or_rent):
     df.drop(columns=['portal'], inplace=True)
     # Get only sale or rent
     df = df[df.sale_or_rent==sale_or_rent]
+    df.drop(columns=['sale_or_rent'], inplace=True)
     # Get only interesting columns
     df = drop_unnecessary_columns(df)
     # Delete properties without price
     df = df[df.price > 0]
-    # Concentrate on flats up to 650.000
-    if sale_or_rent == 'buy':
-        df = df[df.price <= 650000]
+    # Remove too expensive properties
+    if sale_or_rent=='buy':
+        df = df[df.price < 1500000]
+    elif sale_or_rent=='rent':
+        df = df[df.price <= 3500]
     # Assume NaNs are E by energy_certificate
     df.energy_certificate.fillna('E', inplace=True)
     # Calculate floor_area
@@ -87,7 +90,7 @@ def preprocess_pisos(df, sale_or_rent):
         'remodelled': ['remodelled'],
         'new': ['brand new'],
         'very good': ['almost new', 'very good'],
-        'to reform': ['to reform']
+        'to reform': ['to renovate']
     }
     df['condition'] = df['condition'].apply(map_from_value_to_key, mapper=condition_dict)
     # Heating
@@ -132,6 +135,14 @@ def preprocess_pisos(df, sale_or_rent):
     }
     df['garden'] = df['garden'].apply(map_from_value_to_key, mapper=garden_dict)
     df.garden.fillna('No', inplace=True)
-    return df
+    # Calculate price per m2
+    df['price'] = df['price']/df['floor_area']
+    df.drop(columns=['floor_area'], inplace=True)
+    # Separate url from df
+    urls = df['url']
+    df.drop(columns='url', inplace=True)
+    # Drop constant columns
+    df = df.loc[:, (df != df.iloc[0]).any()]
+    return df, urls
 
 
