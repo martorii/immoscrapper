@@ -14,7 +14,7 @@ if not db.test_connection():
 
 # Define what to search for
 city = "Barcelona"
-action = "rent"
+action = "buy"
 pages = [1, 2000]
 
 # Scrap

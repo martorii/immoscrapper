@@ -15,6 +15,7 @@ def calculate_price(form_components):
     df = pd.DataFrame.from_dict(values_dict)
     # Check if all fields are filled up
     if len(df.columns) < 19:
+        print(df.columns)
         return -1
     # Check if columns are filled
     buy_or_rent = df['buy_or_rent'].values[0]
